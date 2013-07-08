@@ -55,6 +55,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AuthoringTests.cs" />
+    <Compile Include="AuthoringTour.cs" />
     <Compile Include="AuthorizationTests.cs" />
     <Compile Include="ExhibitsTests.cs" />
     <Compile Include="FooterTests.cs" />

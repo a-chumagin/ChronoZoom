@@ -59,10 +59,12 @@
   <ItemGroup>
     <Compile Include="Constants\ApiConstants.cs" />
     <Compile Include="Constants\Javascripts.cs" />
+    <Compile Include="Entities\Bookmark.cs" />
     <Compile Include="Entities\ContentItem.cs" />
     <Compile Include="Entities\Exhibit.cs" />
     <Compile Include="Entities\NewExhibitApiResponse.cs" />
     <Compile Include="Entities\Timeline.cs" />
+    <Compile Include="Entities\Tour.cs" />
     <Compile Include="Entities\User.cs" />
     <Compile Include="HelperManager.cs" />
     <Compile Include="BrowserImpl\ChromeControls.cs" />
