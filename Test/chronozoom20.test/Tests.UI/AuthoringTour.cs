@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Application.Helper.Entities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using ContentItem = Chronozoom.Entities.ContentItem;
 
 namespace Tests
 {
@@ -13,7 +14,7 @@ namespace Tests
         public TestContext TestContext { get; set; }
         private static Timeline _newTimeline;
         private static Exhibit _newExhibit;
-        private static Timeline _timeline;
+        private static Tour _newTour;
 
         [ClassInitialize]
         public static void ClassInitialize(TestContext testContext)
@@ -23,9 +24,54 @@ namespace Tests
         [TestInitialize]
         public void TestInitialize()
         {
-            //BrowserStateManager.RefreshState();
-            //HomePageHelper.OpenSandboxPage();
+            BrowserStateManager.RefreshState();
+            HomePageHelper.OpenSandboxPage();
             //HomePageHelper.DeleteAllElementsLocally();
+            TourHelper.DeleteToursIfExist("webdriverTour");
+
+            #region create timeline
+
+            _newTimeline = new Timeline
+            {
+                FromYear = -6061670000,
+                ToYear = -5808809999,
+                Title = "WebDriverApiTitle"
+            };
+            Guid newTimelineId = ApiHelper.CreateTimelineByApi(_newTimeline);
+            _newTimeline.Id = newTimelineId;
+
+            #endregion
+
+            #region create exhibit
+
+            var contentItems = new Collection<ContentItem>();
+            var contentItem = new ContentItem() { Title = "WebDriverApi", MediaType = "image", Uri = @"http://yandex.st/www/1.609/yaru/i/logo.png", Caption = "", Order = 0, Attribution = "", MediaSource = "" };
+            contentItems.Add(contentItem);
+
+            _newExhibit = new Exhibit()
+            {
+                Timeline_ID = newTimelineId,
+                Title = "WebDriverApiExhibit",
+                Year = -8596430000,
+                ContentItems = contentItems
+            };
+            _newExhibit.Id = new Guid(ApiHelper.CreateExhibitByApi(_newExhibit).ExhibitId);
+
+            #endregion
+
+            #region init new tour
+
+            _newTour = new Tour();
+            _newTour.Name = "webdriverTour";
+            _newTour.Description = "webdriver description";
+            Bookmark exhibitBookmark = new Bookmark { Name = "WebDriverApiExhibitBookmark", Id = _newExhibit.Id, Type = "exhibit" };
+            Bookmark timelineBookmark = new Bookmark { Name = "WebDriverApiTimelineBookmark", Id = _newTimeline.Id, Type = "timeline" };
+            Collection<Chronozoom.Entities.Bookmark> bookmarks = new Collection<Chronozoom.Entities.Bookmark> { exhibitBookmark, timelineBookmark };
+            _newTour.Bookmarks = bookmarks;
+
+            #endregion
+
+            HomePageHelper.OpenSandboxPage();
         }
 
         [ClassCleanup]
@@ -36,15 +82,15 @@ namespace Tests
         [TestCleanup]
         public void TestCleanup()
         {
-            //if (_newExhibit != null && ExhibitHelper.IsExhibitFound(_newExhibit))
-            //{
-            //    ExhibitHelper.DeleteExhibitByJavascript(_newExhibit);
-            //}
-            //if (_newTimeline != null && TimelineHelper.IsTimelineFound(_newTimeline))
-            //{
-            //    TimelineHelper.DeleteTimelineByJavaScript(_newTimeline);
-            //}
-            //CreateScreenshotsIfTestFail(TestContext);
+            #region Delete timeline, exhibit, tour
+
+            ApiHelper.DeleteTimelineByApi(_newTimeline);
+            ApiHelper.DeleteExhibitByApi(_newExhibit);
+            //ApiHelper.DeleteTourByApi(_newTour);
+            //TourHelper.DeleteToursIfExist("webdriverTour");
+
+            #endregion
+            CreateScreenshotsIfTestFail(TestContext);
         }
 
         #endregion
@@ -52,21 +98,11 @@ namespace Tests
         [TestMethod]
         public void tour_should_be_created()
         {
-            _newTimeline = new Timeline
-                {
-                    //Timeline_ID = new Guid("bdc1ceff-76f8-4df4-ba72-96b353991314"),
-                    FromYear = -2358409999,
-                    ToYear = -7972900000,
-                    Title = "WebDriverApiTitle"
+            string newtourId;
+            TourHelper.AddTour(_newTour, out newtourId);
+            //_newTour.Id = new Guid(newtourId);
 
-                };
-            Guid newTimelineId = ApiHelper.CreateTimelineByApi(_newTimeline);
-            Bookmark bookmark = new Bookmark {Name = "name", Id = newTimelineId};
-            Tour tour = new Tour();
-            tour.Name = "webdriverTour";
-            tour.Description = "webdriver description";
-            tour.Bookmarks = new Collection<Chronozoom.Entities.Bookmark>() { bookmark };
-            TourHelper.AddTour(tour);
+            Assert.IsTrue(TourHelper.IsTourExist(_newTour));
         }
     }
 }

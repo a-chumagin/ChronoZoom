@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using Application.Driver;
 using Application.Helper.Constants;
 using Application.Helper.UserActions;
@@ -13,18 +15,23 @@ namespace Application.Helper.Helpers
     {
         private const string MayanHistoryTourName = "Mayan History";
 
-        public void AddTour(Tour tour)
+        public void AddTour(Tour tour, out string tourId)
         {
             Logger.Log("<- " + tour);
-            
+
             InitTourCreationMode();
             SetTourName(tour.Name);
             SetTourDescription(tour.Description);
             SetTourBookmarks(tour.Bookmarks);
             CreateTour();
-            WaitAjaxComplete(60);
-        }
+            WaitForAlertIsDisplayed();
+            AcceptAlert();
+            CloseTourEditForm();
+            //tourId = GetTourId(tour.Name);
+            tourId = "";
 
+            Logger.Log("->");
+        }
 
         public void OpenToursListWindow()
         {
@@ -55,15 +62,91 @@ namespace Application.Helper.Helpers
             Logger.Log("->");
         }
 
+        public bool IsTourExist(Tour tour)
+        {
+            Logger.Log("<-");
+            bool result = false;
+            OpenToursListWindow();
+            List<string> tours = GetTourNames();
+            if (tours.Contains(tour.Name)) result = true;
+            Logger.Log("-> result: " + result.ToString());
+            return result;
+        }
+
+        public void DeleteToursIfExist(string tourName)
+        {
+            Logger.Log("<-");
+            OpenToursListWindow();
+            List<string> tours = GetTourNames();
+            OpenToursListWindow();
+
+            foreach (var tour in tours)
+            {
+                if (tour == tourName)
+                {
+                    OpenToursListWindow();
+                    EditTour(tourName);
+                    DeleteTour();
+                    Sleep(3);
+                    Logger.Log("tour deleted: " + tourName);
+                }
+            }
+            Logger.Log("->");
+        }
+
+        private void CloseTourEditForm()
+        {
+            Logger.Log("<-");
+            Click(By.XPath("//*[@id='auth-edit-tours-form']/div[1]/ul/li[3]/a"));
+            Logger.Log("->");
+        }
+
+        private string GetTourId(string name)
+        {
+            Logger.Log("<-");
+            string tourId = GetJavaScriptExecutionResult("for(var i = 0; i < CZ.Tours.tours.length; i++){if(CZ.Tours.tours[i].title == '"+name+"'){CZ.Tours.tours[i].id}}");
+            Logger.Log("-> id: " + tourId);
+            return tourId;
+        }
+
+        private void EditTour(string tourName)
+        {
+            Logger.Log("<-");
+            string xpath = String.Format("//*[@id='toursList']//*[text()='{0}']/following-sibling::div[2]", tourName);
+            Click(By.XPath(xpath));
+            Logger.Log("->");
+        }
+
+        private void DeleteTour()
+        {
+            Logger.Log("<-");
+            Click(By.XPath("//*[@id='auth-edit-tours-form']/div[2]/button[text()='delete tour']"));
+            Logger.Log("->");
+        }
+
+
+        private List<string> GetTourNames()
+        {
+            Logger.Log("<-");
+            ReadOnlyCollection<IWebElement> tourElements = FindElements(By.XPath("//*[@id='tours']/div[*]/li/div[2]/p[1]"));
+            List<string> tourNames = tourElements.Select(tourElement => tourElement.Text).ToList();
+            Logger.Log("-> " +string.Join(",", tourNames));
+            return tourNames;
+        }
+
         private void SelectTour(string tour)
         {
+            Logger.Log("<-");
             string xpath = String.Format("//*[@id='toursList']//*[text()='{0}']/following-sibling::div[1]", tour);
             Click(By.XPath(xpath));
+            Logger.Log("->");
         }
 
         private void CreateTour()
         {
+            Logger.Log("<-");
             Click(By.XPath("//*[@id='auth-edit-tours-form']/div[2]/button[text()='create tour']"));
+            Logger.Log("->");
         }
 
         private void InitTourCreationMode()
@@ -81,25 +164,29 @@ namespace Application.Helper.Helpers
                 Logger.Log("Add bookmark: " + bookmark.Name);
                 Click(By.XPath("//*[@id='auth-edit-tours-form']/div[2]/button[text()='add new stop']"));
                 WaitForElementIsDisplayed(By.Id("message-window"));
-                GoToTimeline(bookmark.Id.ToString());
+                NavigateToBookmark((Bookmark) bookmark);
+                WaitAnimation();
+                Sleep(7);
                 Click(By.Id("vc-container"));
                 Sleep(3);
             }
         }
 
-        public Tour CreateCustomTour()
+        private void NavigateToBookmark(Bookmark bookmark)
         {
-            const string script = Javascripts.LastCanvasElement;
-            var timelineTitle = GetJavaScriptExecutionResult(script + ".title");
-            var timelineId = GetJavaScriptExecutionResult(script + ".id");
-
-            var tour = new Tour() { Name = "WebDriverTour", Description = "WebDriverTourDescription" };
-            tour.Bookmarks = new Collection<Chronozoom.Entities.Bookmark> { new Bookmark { Name = timelineId } };
-            AddTour(tour);
-
-            return new Tour();
+            switch (bookmark.Type)
+            {
+                case "timeline":
+                    ExecuteJavaScript(string.Format("CZ.Search.goToSearchResult('t{0}', 'timeline')", bookmark.Id));
+                    break;
+                case "exhibit":
+                    ExecuteJavaScript(string.Format("CZ.Search.goToSearchResult('e{0}', 'exhibit')", bookmark.Id));
+                    break;
+                default:
+                    ExecuteJavaScript(string.Format("CZ.Search.goToSearchResult('{0}')", bookmark.Id));
+                    break;
+            }
         }
-
 
         private void GoToTimeline(string guid)
         {
@@ -119,5 +206,7 @@ namespace Application.Helper.Helpers
             TypeText(By.XPath("//*[@id='auth-edit-tours-form']/div[2]/input"), tourName);
             Logger.Log("->");
         }
+
+       
     }
 }

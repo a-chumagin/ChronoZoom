@@ -138,7 +138,7 @@ namespace Application.Helper.Helpers
         public void NavigateToExhibit(Exhibit exhibit)
         {
             Logger.Log("<- title: " + exhibit.Title);
-            ExecuteJavaScript(string.Format("CZ.Search.goToSearchResult('e{0}')", exhibit.Id));
+            ExecuteJavaScript(string.Format("CZ.Search.goToSearchResult('e{0}', 'exhibit')", exhibit.Id));
             WaitAnimation();
             MoveToElementAndClick(By.ClassName("virtualCanvasLayerCanvas"));
             Logger.Log("->");

@@ -8,5 +8,6 @@
         public const string SuperCollectionUrl = "sandbox/sandbox/";
         public const string TimelineApiServiceUrl = SuperCollectionUrl + "timeline";
         public const string ExhibitApiServiceUrl = SuperCollectionUrl + "exhibit"; 
+        public const string TourApiServiceUrl = SuperCollectionUrl + "tour"; 
     }
 }
